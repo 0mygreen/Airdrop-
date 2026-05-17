@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎯 Airdrop Tracker Pro</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #0a0a0f;
+            --card: #12121a;
+            --card-hover: #1a1a25;
+            --border: #2a2a3a;
+            --accent: #7c3aed;
+            --accent-light: #a78bfa;
+            --green: #10b981;
+            --yellow: #f59e0b;
+            --red: #ef4444;
+            --orange: #f97316;
+            --cyan: #06b6d4;
+            --text: #e2e8f0;
+            --text-dim: #64748b;
+            --text-bright: #f8fafc;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .header h1 { font-size: 28px; color: var(--text-bright); }
+        .header h1 span { color: var(--accent-light); }
+
+        .header-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-primary { background: var(--accent); color: white; }
+        .btn-primary:hover { background: #6d28d9; transform: translateY(-1px); }
+        .btn-sm { padding: 6px 14px; font-size: 12px; border-radius: 8px; }
+        .btn-danger { background: var(--red); color: white; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-success { background: var(--green); color: white; }
+        .btn-success:hover { background: #059669; }
+        .btn-orange { background: var(--orange); color: white; }
+        .btn-orange:hover { background: #ea580c; }
+        .btn-cyan { background: var(--cyan); color: white; }
+        .btn-cyan:hover { background: #0891b2; }
+        .btn-ghost { background: transparent; color: var(--text-dim); border: 1px solid var(--border); }
+        .btn-ghost:hover { color: var(--text); border-color: var(--text-dim); }
+
+        /* Notification Banner */
+        .notif-banner {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(249, 115, 22, 0.15));
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 12px;
+            padding: 14px 20px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .notif-banner.show { display: block; }
+
+        .notif-title {
+            font-weight: 700;
+            color: var(--red);
+            margin-bottom: 6px;
+            font-size: 14px;
+        }
+
+        .notif-item {
+            font-size: 13px;
+            color: var(--text);
+            padding: 3px 0;
+        }
+
+        .notif-item .days { color: var(--orange); font-weight: 600; }
+
+        /* Stats Bar */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 18px;
+            text-align: center;
+        }
+
+        .stat-value { font-size: 28px; font-weight: 700; color: var(--text-bright); }
+        .stat-label { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+        .stat-card.active .stat-value { color: var(--green); }
+        .stat-card.pending .stat-value { color: var(--yellow); }
+        .stat-card.cost .stat-value { color: var(--orange); }
+        .stat-card.deadline .stat-value { color: var(--red); }
+
+        /* Filters */
+        .filters {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 8px 18px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-dim);
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .filter-btn.active, .filter-btn:hover {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+
+        /* Airdrop Cards */
+        .airdrop-list { display: flex; flex-direction: column; gap: 15px; }
+
+        .airdrop-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 20px;
+            transition: all 0.2s;
+        }
+
+        .airdrop-card:hover { border-color: var(--accent); background: var(--card-hover); }
+        .airdrop-card.completed { opacity: 0.6; }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+            gap: 10px;
+        }
+
+        .card-title { font-size: 18px; font-weight: 700; color: var(--text-bright); }
+
+        .card-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+
+        .badge {
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-confirmed { background: rgba(16, 185, 129, 0.15); color: var(--green); }
+        .badge-potential { background: rgba(245, 158, 11, 0.15); color: var(--yellow); }
+        .badge-funding { background: rgba(124, 58, 237, 0.15); color: var(--accent-light); }
+        .badge-chain { background: rgba(99, 102, 241, 0.15); color: #818cf8; }
+        .badge-cost { background: rgba(249, 115, 22, 0.15); color: var(--orange); }
+        .badge-deadline { background: rgba(239, 68, 68, 0.15); color: var(--red); }
+        .badge-deadline.soon { background: rgba(239, 68, 68, 0.3); animation: pulse 2s infinite; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .card-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+        /* Tasks */
+        .task-list { margin-top: 12px; }
+
+        .task-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+        }
+
+        .task-item:last-child { border-bottom: none; }
+
+        .task-check {
+            width: 22px; height: 22px;
+            border-radius: 6px;
+            border: 2px solid var(--border);
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.2s;
+            background: transparent; color: transparent; font-size: 14px;
+        }
+
+        .task-check.done { background: var(--green); border-color: var(--green); color: white; }
+        .task-text { flex: 1; font-size: 14px; }
+        .task-text.done { text-decoration: line-through; color: var(--text-dim); }
+        .task-freq {
+            font-size: 11px; color: var(--text-dim);
+            padding: 3px 8px; border-radius: 4px;
+            background: rgba(255,255,255,0.05);
+        }
+
+        .task-delete {
+            opacity: 0; color: var(--red); cursor: pointer;
+            font-size: 16px; transition: opacity 0.2s;
+            background: none; border: none;
+        }
+
+        .task-item:hover .task-delete { opacity: 1; }
+
+        /* Progress Bar */
+        .progress-bar {
+            height: 4px; background: rgba(255,255,255,0.08);
+            border-radius: 2px; margin-top: 12px; overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), var(--green));
+            border-radius: 2px; transition: width 0.4s ease;
+        }
+
+        .progress-text { font-size: 12px; color: var(--text-dim); margin-top: 6px; text-align: right; }
+
+        /* Add Task Inline */
+        .add-task-row { display: flex; gap: 8px; margin-top: 10px; }
+
+        .add-task-row input {
+            flex: 1; padding: 8px 12px; border-radius: 8px;
+            border: 1px solid var(--border); background: rgba(255,255,255,0.05);
+            color: var(--text); font-size: 13px; outline: none;
+        }
+
+        .add-task-row input:focus { border-color: var(--accent); }
+
+        .add-task-row select {
+            padding: 8px 12px; border-radius: 8px;
+            border: 1px solid var(--border); background: var(--card);
+            color: var(--text); font-size: 13px; outline: none;
+        }
+
+        /* Cost & Deadline Info */
+        .card-info {
+            display: flex; gap: 15px; margin-top: 10px; flex-wrap: wrap;
+            font-size: 13px;
+        }
+
+        .info-item {
+            display: flex; align-items: center; gap: 5px;
+            color: var(--text-dim);
+        }
+
+        .info-item .val { color: var(--text); font-weight: 600; }
+
+        /* Notes */
+        .card-notes {
+            margin-top: 10px; padding: 10px 14px;
+            background: rgba(255,255,255,0.03); border-radius: 8px;
+            font-size: 13px; color: var(--text-dim); white-space: pre-wrap;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none; position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7); z-index: 100;
+            align-items: center; justify-content: center; padding: 20px;
+        }
+
+        .modal-overlay.show { display: flex; }
+
+        .modal {
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 16px; padding: 30px;
+            width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto;
+        }
+
+        .modal h2 { margin-bottom: 20px; color: var(--text-bright); }
+        .form-group { margin-bottom: 14px; }
+
+        .form-group label {
+            display: block; font-size: 13px; color: var(--text-dim); margin-bottom: 6px;
+        }
+
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%; padding: 10px 14px; border-radius: 10px;
+            border: 1px solid var(--border); background: rgba(255,255,255,0.05);
+            color: var(--text); font-size: 14px; outline: none; font-family: inherit;
+        }
+
+        .form-group input:focus, .form-group textarea:focus { border-color: var(--accent); }
+        .form-group textarea { resize: vertical; min-height: 70px; }
+
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+        .modal-actions {
+            display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;
+        }
+
+        /* Empty State */
+        .empty-state { text-align: center; padding: 60px 20px; color: var(--text-dim); }
+        .empty-state .icon { font-size: 48px; margin-bottom: 15px; }
+        .empty-state h3 { color: var(--text); margin-bottom: 8px; }
+
+        /* Export/Import bar */
+        .data-actions {
+            display: flex; gap: 10px; margin-bottom: 20px;
+            padding: 12px 16px; background: var(--card);
+            border: 1px solid var(--border); border-radius: 12px;
+            align-items: center; flex-wrap: wrap;
+        }
+
+        .data-actions .label {
+            font-size: 13px; color: var(--text-dim);
+            margin-right: auto;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed; bottom: 30px; right: 30px;
+            background: var(--card); border: 1px solid var(--green);
+            color: var(--green); padding: 14px 24px;
+            border-radius: 12px; font-size: 14px; font-weight: 600;
+            z-index: 200; opacity: 0; transform: translateY(20px);
+            transition: all 0.3s; pointer-events: none;
+        }
+
+        .toast.show { opacity: 1; transform: translateY(0); }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .header h1 { font-size: 22px; }
+            .stat-value { font-size: 22px; }
+            .card-header { flex-direction: column; }
+            .form-row { grid-template-columns: 1fr; }
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+        /* Hidden file input */
+        #import-input { display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🎯 <span>Airdrop</span> Tracker Pro</h1>
+            <div class="header-actions">
+                <button class="btn btn-primary" onclick="openModal()">+ Tambah Airdrop</button>
+            </div>
+        </div>
+
+        <!-- Deadline Notifications -->
+        <div class="notif-banner" id="notif-banner">
+            <div class="notif-title">⏰ Deadline Mendekati!</div>
+            <div id="notif-list"></div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-value" id="stat-total">0</div>
+                <div class="stat-label">Total Airdrop</div>
+            </div>
+            <div class="stat-card active">
+                <div class="stat-value" id="stat-active">0</div>
+                <div class="stat-label">Aktif</div>
+            </div>
+            <div class="stat-card pending">
+                <div class="stat-value" id="stat-tasks">0</div>
+                <div class="stat-label">Task Hari Ini</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="stat-done">0%</div>
+                <div class="stat-label">Completion</div>
+            </div>
+            <div class="stat-card cost">
+                <div class="stat-value" id="stat-cost">$0</div>
+                <div class="stat-label">Total Biaya</div>
+            </div>
+            <div class="stat-card deadline">
+                <div class="stat-value" id="stat-deadline">0</div>
+                <div class="stat-label">Deadline ≤7 Hari</div>
+            </div>
+        </div>
+
+        <!-- Data Actions -->
+        <div class="data-actions">
+            <span class="label">💾 Backup & Restore:</span>
+            <button class="btn btn-sm btn-success" onclick="exportData()">📤 Export JSON</button>
+            <button class="btn btn-sm btn-cyan" onclick="document.getElementById('import-input').click()">📥 Import JSON</button>
+            <button class="btn btn-sm btn-orange" onclick="exportCSV()">📊 Export CSV</button>
+            <button class="btn btn-sm btn-ghost" onclick="resetDailyTasksManual()">🔄 Reset Task Harian</button>
+            <input type="file" id="import-input" accept=".json" onchange="importData(event)">
+        </div>
+
+        <!-- Filters -->
+        <div class="filters">
+            <button class="filter-btn active" onclick="setFilter('all', this)">Semua</button>
+            <button class="filter-btn" onclick="setFilter('active', this)">Aktif</button>
+            <button class="filter-btn" onclick="setFilter('confirmed', this)">Confirmed</button>
+            <button class="filter-btn" onclick="setFilter('potential', this)">Potential</button>
+            <button class="filter-btn" onclick="setFilter('deadline', this)">⏰ Ada Deadline</button>
+            <button class="filter-btn" onclick="setFilter('completed', this)">Selesai</button>
+        </div>
+
+        <!-- Airdrop List -->
+        <div class="airdrop-list" id="airdrop-list"></div>
+    </div>
+
+    <!-- Add Airdrop Modal -->
+    <div class="modal-overlay" id="modal-add">
+        <div class="modal">
+            <h2>➕ Tambah Airdrop Baru</h2>
+            <div class="form-group">
+                <label>Nama Project *</label>
+                <input type="text" id="input-name" placeholder="Contoh: EigenLayer">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Status</label>
+                    <select id="input-status">
+                        <option value="potential">Potential</option>
+                        <option value="confirmed">Confirmed</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Chain / Network</label>
+                    <input type="text" id="input-chain" placeholder="Ethereum, Solana...">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Funding</label>
+                    <input type="text" id="input-funding" placeholder="$50M">
+                </div>
+                <div class="form-group">
+                    <label>Biaya yang Dikeluarkan ($)</label>
+                    <input type="number" id="input-cost" placeholder="0" min="0" step="0.01">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Deadline (opsional)</label>
+                    <input type="date" id="input-deadline">
+                </div>
+                <div class="form-group">
+                    <label>Link</label>
+                    <input type="text" id="input-link" placeholder="https://...">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Catatan</label>
+                <textarea id="input-notes" placeholder="Info tambahan..."></textarea>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-ghost" onclick="closeModal()">Batal</button>
+                <button class="btn btn-primary" onclick="addAirdrop()">Tambah</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Airdrop Modal -->
+    <div class="modal-overlay" id="modal-edit">
+        <div class="modal">
+            <h2>✏️ Edit Airdrop</h2>
+            <input type="hidden" id="edit-id">
+            <div class="form-group">
+                <label>Nama Project *</label>
+                <input type="text" id="edit-name">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Status</label>
+                    <select id="edit-status">
+                        <option value="potential">Potential</option>
+                        <option value="confirmed">Confirmed</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Chain / Network</label>
+                    <input type="text" id="edit-chain">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Funding</label>
+                    <input type="text" id="edit-funding">
+                </div>
+                <div class="form-group">
+                    <label>Biaya ($)</label>
+                    <input type="number" id="edit-cost" min="0" step="0.01">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Deadline</label>
+                    <input type="date" id="edit-deadline">
+                </div>
+                <div class="form-group">
+                    <label>Link</label>
+                    <input type="text" id="edit-link">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Catatan</label>
+                <textarea id="edit-notes"></textarea>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-ghost" onclick="closeEditModal()">Batal</button>
+                <button class="btn btn-primary" onclick="saveEdit()">Simpan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // ===== DATA =====
+        let data = JSON.parse(localStorage.getItem('airdrop-tracker') || '[]');
+        let currentFilter = 'all';
+
+        // Seed sample data if empty
+        if (data.length === 0) {
+            const now = Date.now();
+            const day = 86400000;
+            data = [
+                {
+                    id: now, name: 'Startale', status: 'potential', chain: 'Multi-chain',
+                    funding: '$70M', cost: 10, deadline: new Date(now + 14*day).toISOString().split('T')[0],
+                    link: 'https://cryptorank.io/drophunting/startale-labs-activity1141',
+                    notes: 'Didanai Samsung Next, Sony Innovation Fund.',
+                    tasks: [
+                        { id: 1, text: 'Connect wallet ke platform', freq: 'once', done: false },
+                        { id: 2, text: 'Selesaikan bounty task di Zealy', freq: 'daily', done: false },
+                        { id: 3, text: 'Follow Twitter @StartaleLabs', freq: 'once', done: false },
+                    ],
+                    createdAt: now
+                },
+                {
+                    id: now+1, name: 'Backed (xStocks)', status: 'confirmed', chain: 'Multi-chain',
+                    funding: '$12.7M', cost: 50, deadline: new Date(now + 7*day).toISOString().split('T')[0],
+                    link: 'https://cryptorank.io/drophunting/backed-activity1126',
+                    notes: 'Confirmed airdrop. Getting a role task.',
+                    tasks: [
+                        { id: 1, text: 'Join Discord & dapatkan role', freq: 'once', done: false },
+                        { id: 2, text: 'Verify身份 di platform', freq: 'once', done: false },
+                        { id: 3, text: 'Check update harian', freq: 'daily', done: false },
+                    ],
+                    createdAt: now+1
+                },
+                {
+                    id: now+2, name: 'D3 Global', status: 'potential', chain: 'Multi-chain',
+                    funding: '$30M', cost: 0, deadline: new Date(now + 21*day).toISOString().split('T')[0],
+                    link: 'https://cryptorank.io/drophunting/d-3-global-activity662',
+                    notes: 'Didanai Paradigm & Coinbase Ventures.',
+                    tasks: [
+                        { id: 1, text: 'Register domain D3', freq: 'once', done: false },
+                        { id: 2, text: 'Complete social tasks', freq: 'daily', done: false },
+                        { id: 3, text: 'Refer teman', freq: 'once', done: false },
+                    ],
+                    createdAt: now+2
+                },
+                {
+                    id: now+3, name: 'Pacifica', status: 'confirmed', chain: 'Trading',
+                    funding: '-', cost: 40, deadline: '',
+                    link: 'https://cryptorank.io/drophunting/pacifica-activity978',
+                    notes: 'Confirmed points airdrop. Trading & social tasks.',
+                    tasks: [
+                        { id: 1, text: 'Daily trading task', freq: 'daily', done: false },
+                        { id: 2, text: 'Social engagement task', freq: 'daily', done: false },
+                    ],
+                    createdAt: now+3
+                },
+                {
+                    id: now+4, name: 'Charms AI', status: 'potential', chain: 'AI',
+                    funding: '$1.5M', cost: 0, deadline: new Date(now + 10*day).toISOString().split('T')[0],
+                    link: 'https://cryptorank.io/drophunting/charms-ai-activity1186',
+                    notes: 'AI project. Didanai Lattice & Base Ecosystem Fund.',
+                    tasks: [
+                        { id: 1, text: 'Join community', freq: 'once', done: false },
+                        { id: 2, text: 'Complete AI interaction tasks', freq: 'daily', done: false },
+                    ],
+                    createdAt: now+4
+                },
+            ];
+            save();
+        }
+
+        function save() { localStorage.setItem('airdrop-tracker', JSON.stringify(data)); }
+
+        // ===== DEADLINE NOTIFICATIONS =====
+        function checkDeadlines() {
+            const now = new Date();
+            const upcoming = [];
+
+            data.forEach(a => {
+                if (!a.deadline) return;
+                const dl = new Date(a.deadline);
+                const diff = Math.ceil((dl - now) / 86400000);
+                if (diff >= 0 && diff <= 7) {
+                    upcoming.push({ name: a.name, days: diff, deadline: a.deadline });
+                }
+            });
+
+            upcoming.sort((a, b) => a.days - b.days);
+
+            const banner = document.getElementById('notif-banner');
+            const list = document.getElementById('notif-list');
+
+            if (upcoming.length > 0) {
+                banner.classList.add('show');
+                list.innerHTML = upcoming.map(u => {
+                    const label = u.days === 0 ? '⚠️ HARI INI!' : u.days === 1 ? '⚠️ BESOK!' : `${u.days} hari lagi`;
+                    return `<div class="notif-item">📌 <strong>${u.name}</strong> — <span class="days">${label}</span> (${u.deadline})</div>`;
+                }).join('');
+            } else {
+                banner.classList.remove('show');
+            }
+        }
+
+        // ===== RENDER =====
+        function render() {
+            const list = document.getElementById('airdrop-list');
+            let filtered = data;
+
+            if (currentFilter === 'active') filtered = data.filter(a => getProgress(a) < 100);
+            else if (currentFilter === 'confirmed') filtered = data.filter(a => a.status === 'confirmed');
+            else if (currentFilter === 'potential') filtered = data.filter(a => a.status === 'potential');
+            else if (currentFilter === 'deadline') filtered = data.filter(a => a.deadline && getDaysLeft(a.deadline) >= 0);
+            else if (currentFilter === 'completed') filtered = data.filter(a => getProgress(a) === 100);
+
+            if (filtered.length === 0) {
+                list.innerHTML = `<div class="empty-state"><div class="icon">📭</div><h3>Belum ada airdrop</h3><p>Klik "Tambah Airdrop" untuk mulai tracking!</p></div>`;
+                updateStats(); checkDeadlines(); return;
+            }
+
+            list.innerHTML = filtered.map(a => {
+                const progress = getProgress(a);
+                const isComplete = progress === 100;
+                const daysLeft = a.deadline ? getDaysLeft(a.deadline) : null;
+                const deadlineSoon = daysLeft !== null && daysLeft >= 0 && daysLeft <= 3;
+                const deadlineBadge = daysLeft !== null ? (
+                    daysLeft < 0 ? `<span class="badge badge-deadline">Expired</span>` :
+                    daysLeft === 0 ? `<span class="badge badge-deadline soon">⚠️ Hari Ini!</span>` :
+                    daysLeft <= 3 ? `<span class="badge badge-deadline soon">⏰ ${daysLeft} hari</span>` :
+                    `<span class="badge badge-deadline">📅 ${daysLeft} hari</span>`
+                ) : '';
+
+                return `
+                <div class="airdrop-card ${isComplete ? 'completed' : ''}" style="${deadlineSoon ? 'border-color: rgba(239,68,68,0.4);' : ''}">
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">
+                                ${a.name}
+                                ${a.link ? `<a href="${a.link}" target="_blank" style="font-size:14px;color:var(--accent-light);text-decoration:none;margin-left:6px">🔗</a>` : ''}
+                            </div>
+                            <div class="card-meta">
+                                <span class="badge badge-${a.status}">${a.status}</span>
+                                ${a.chain ? `<span class="badge badge-chain">${a.chain}</span>` : ''}
+                                ${a.funding && a.funding !== '-' ? `<span class="badge badge-funding">💰 ${a.funding}</span>` : ''}
+                                ${a.cost > 0 ? `<span class="badge badge-cost">💸 $${a.cost}</span>` : ''}
+                                ${deadlineBadge}
+                            </div>
+                        </div>
+                        <div class="card-actions">
+                            <button class="btn btn-sm btn-ghost" onclick="openEditModal(${a.id})">✏️</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteAirdrop(${a.id})">🗑️</button>
+                        </div>
+                    </div>
+
+                    <div class="task-list">
+                        ${a.tasks.map(t => `
+                            <div class="task-item">
+                                <button class="task-check ${t.done ? 'done' : ''}" onclick="toggleTask(${a.id}, ${t.id})">${t.done ? '✓' : ''}</button>
+                                <span class="task-text ${t.done ? 'done' : ''}">${t.text}</span>
+                                <span class="task-freq">${t.freq === 'daily' ? '🔄 Harian' : '📌 Sekali'}</span>
+                                <button class="task-delete" onclick="deleteTask(${a.id}, ${t.id})">×</button>
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <div class="add-task-row">
+                        <input type="text" placeholder="Tambah task baru..." id="new-task-${a.id}" onkeydown="if(event.key==='Enter')addTask(${a.id})">
+                        <select id="new-freq-${a.id}">
+                            <option value="daily">Harian</option>
+                            <option value="once">Sekali</option>
+                        </select>
+                        <button class="btn btn-sm btn-primary" onclick="addTask(${a.id})">+</button>
+                    </div>
+
+                    ${a.notes ? `<div class="card-notes">📝 ${a.notes}</div>` : ''}
+
+                    <div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div>
+                    <div class="progress-text">${progress}% selesai · ${a.tasks.filter(t=>t.done).length}/${a.tasks.length} task</div>
+                </div>`;
+            }).join('');
+
+            updateStats();
+            checkDeadlines();
+        }
+
+        function getProgress(a) {
+            if (a.tasks.length === 0) return 0;
+            return Math.round((a.tasks.filter(t => t.done).length / a.tasks.length) * 100);
+        }
+
+        function getDaysLeft(deadline) {
+            if (!deadline) return null;
+            const now = new Date(); now.setHours(0,0,0,0);
+            const dl = new Date(deadline); dl.setHours(0,0,0,0);
+            return Math.ceil((dl - now) / 86400000);
+        }
+
+        function updateStats() {
+            const active = data.filter(a => getProgress(a) < 100).length;
+            const dailyTasks = data.reduce((s, a) => s + a.tasks.filter(t => t.freq === 'daily' && !t.done).length, 0);
+            const totalTasks = data.reduce((s, a) => s + a.tasks.length, 0);
+            const doneTasks = data.reduce((s, a) => s + a.tasks.filter(t => t.done).length, 0);
+            const rate = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
+            const totalCost = data.reduce((s, a) => s + (parseFloat(a.cost) || 0), 0);
+            const deadlineSoon = data.filter(a => {
+                const d = getDaysLeft(a.deadline);
+                return d !== null && d >= 0 && d <= 7;
+            }).length;
+
+            document.getElementById('stat-total').textContent = data.length;
+            document.getElementById('stat-active').textContent = active;
+            document.getElementById('stat-tasks').textContent = dailyTasks;
+            document.getElementById('stat-done').textContent = rate + '%';
+            document.getElementById('stat-cost').textContent = '$' + totalCost.toFixed(0);
+            document.getElementById('stat-deadline').textContent = deadlineSoon;
+        }
+
+        // ===== ACTIONS =====
+        function addAirdrop() {
+            const name = document.getElementById('input-name').value.trim();
+            if (!name) return alert('Nama project wajib diisi!');
+
+            data.unshift({
+                id: Date.now(), name,
+                status: document.getElementById('input-status').value,
+                chain: document.getElementById('input-chain').value.trim(),
+                funding: document.getElementById('input-funding').value.trim(),
+                cost: parseFloat(document.getElementById('input-cost').value) || 0,
+                deadline: document.getElementById('input-deadline').value,
+                link: document.getElementById('input-link').value.trim(),
+                notes: document.getElementById('input-notes').value.trim(),
+                tasks: [], createdAt: Date.now()
+            });
+
+            save(); closeModal(); render(); clearForm();
+            showToast('✅ Airdrop berhasil ditambahkan!');
+        }
+
+        function deleteAirdrop(id) {
+            if (!confirm('Hapus airdrop ini?')) return;
+            data = data.filter(a => a.id !== id);
+            save(); render();
+            showToast('🗑️ Airdrop dihapus');
+        }
+
+        function toggleTask(aid, tid) {
+            const a = data.find(x => x.id === aid);
+            const t = a?.tasks.find(x => x.id === tid);
+            if (t) { t.done = !t.done; save(); render(); }
+        }
+
+        function addTask(aid) {
+            const input = document.getElementById(`new-task-${aid}`);
+            const freq = document.getElementById(`new-freq-${aid}`).value;
+            const text = input.value.trim();
+            if (!text) return;
+            const a = data.find(x => x.id === aid);
+            if (a) { a.tasks.push({ id: Date.now(), text, freq, done: false }); save(); render(); }
+        }
+
+        function deleteTask(aid, tid) {
+            const a = data.find(x => x.id === aid);
+            if (a) { a.tasks = a.tasks.filter(t => t.id !== tid); save(); render(); }
+        }
+
+        // ===== EDIT MODAL =====
+        function openEditModal(id) {
+            const a = data.find(x => x.id === id);
+            if (!a) return;
+            document.getElementById('edit-id').value = id;
+            document.getElementById('edit-name').value = a.name;
+            document.getElementById('edit-status').value = a.status;
+            document.getElementById('edit-chain').value = a.chain || '';
+            document.getElementById('edit-funding').value = a.funding || '';
+            document.getElementById('edit-cost').value = a.cost || 0;
+            document.getElementById('edit-deadline').value = a.deadline || '';
+            document.getElementById('edit-link').value = a.link || '';
+            document.getElementById('edit-notes').value = a.notes || '';
+            document.getElementById('modal-edit').classList.add('show');
+        }
+
+        function closeEditModal() { document.getElementById('modal-edit').classList.remove('show'); }
+
+        function saveEdit() {
+            const id = parseInt(document.getElementById('edit-id').value);
+            const a = data.find(x => x.id === id);
+            if (!a) return;
+            a.name = document.getElementById('edit-name').value.trim() || a.name;
+            a.status = document.getElementById('edit-status').value;
+            a.chain = document.getElementById('edit-chain').value.trim();
+            a.funding = document.getElementById('edit-funding').value.trim();
+            a.cost = parseFloat(document.getElementById('edit-cost').value) || 0;
+            a.deadline = document.getElementById('edit-deadline').value;
+            a.link = document.getElementById('edit-link').value.trim();
+            a.notes = document.getElementById('edit-notes').value.trim();
+            save(); closeEditModal(); render();
+            showToast('✅ Airdrop berhasil diupdate!');
+        }
+
+        // ===== FILTER =====
+        function setFilter(filter, btn) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            render();
+        }
+
+        // ===== MODAL =====
+        function openModal() { document.getElementById('modal-add').classList.add('show'); }
+        function closeModal() { document.getElementById('modal-add').classList.remove('show'); }
+        function clearForm() {
+            ['input-name','input-chain','input-funding','input-cost','input-link','input-notes','input-deadline'].forEach(id => {
+                document.getElementById(id).value = '';
+            });
+        }
+
+        document.getElementById('modal-add').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
+        document.getElementById('modal-edit').addEventListener('click', function(e) { if (e.target === this) closeEditModal(); });
+
+        // ===== EXPORT / IMPORT =====
+        function exportData() {
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `airdrop-backup-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('📤 Data berhasil di-export!');
+        }
+
+        function exportCSV() {
+            let csv = 'Name,Status,Chain,Funding,Cost,Deadline,Link,Progress,Tasks Done,Total Tasks,Notes\n';
+            data.forEach(a => {
+                const progress = getProgress(a);
+                const done = a.tasks.filter(t => t.done).length;
+                csv += `"${a.name}","${a.status}","${a.chain||''}","${a.funding||''}","${a.cost||0}","${a.deadline||''}","${a.link||''}","${progress}%","${done}","${a.tasks.length}","${(a.notes||'').replace(/"/g,'""')}"\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const el = document.createElement('a');
+            el.href = url;
+            el.download = `airdrop-${new Date().toISOString().split('T')[0]}.csv`;
+            el.click();
+            URL.revokeObjectURL(url);
+            showToast('📊 CSV berhasil di-export!');
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (!Array.isArray(imported)) throw new Error('Invalid format');
+                    if (!confirm(`Import ${imported.length} airdrop? Data saat ini akan ditimpa.`)) return;
+                    data = imported;
+                    save(); render();
+                    showToast(`📥 Berhasil import ${imported.length} airdrop!`);
+                } catch (err) {
+                    alert('❌ File tidak valid! Pastikan format JSON yang benar.');
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        // ===== DAILY RESET =====
+        function resetDailyTasks() {
+            const lastReset = localStorage.getItem('airdrop-last-reset');
+            const today = new Date().toDateString();
+            if (lastReset !== today) {
+                data.forEach(a => {
+                    a.tasks.forEach(t => { if (t.freq === 'daily') t.done = false; });
+                });
+                localStorage.setItem('airdrop-last-reset', today);
+                save();
+            }
+        }
+
+        function resetDailyTasksManual() {
+            if (!confirm('Reset semua task harian?')) return;
+            data.forEach(a => {
+                a.tasks.forEach(t => { if (t.freq === 'daily') t.done = false; });
+            });
+            localStorage.setItem('airdrop-last-reset', new Date().toDateString());
+            save(); render();
+            showToast('🔄 Task harian berhasil di-reset!');
+        }
+
+        // ===== TOAST =====
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 2500);
+        }
+
+        // ===== INIT =====
+        resetDailyTasks();
+        render();
+
+        // Check deadlines every minute
+        setInterval(checkDeadlines, 60000);
+    </script>
+</body>
+</html>
